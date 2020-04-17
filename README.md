@@ -74,7 +74,8 @@ Description of the first two digits of NAICS.
 | 62	| Health care and social assistance |
 | 71	| Arts, entertainment, and recreation |
 | 72	| Accommodation and food services |
-| 81	| Other services (except public administration) 92 Public administration |
+| 81	| Other services (except public administration) 
+| 92 | Public administration |
 
 ## Acknowledgements
 Data was posted to Kaggle by Mirbek Toktogaraev, with the original data set id from “Should This Loan be Approved or Denied?”: A Large Dataset with Class Assignment Guidelines.
@@ -82,3 +83,4 @@ by: Min Li, Amy Mickel & Stanley Taylor
 
 To link to this article: https://doi.org/10.1080/10691898.2018.1434342
 
+Unfortunately the file size of the data itself was too large for me to upload here. The data used for this project can be found here: https://www.kaggle.com/mirbektoktogaraev/should-this-loan-be-approved-or-denied
