@@ -32,23 +32,27 @@ SBA_data_copy[['DisbursementGross', 'BalanceGross', 'ChgOffPrinGr', 'GrAppv', 'S
 # ApprovalFY has multiple data types
 SBA_data_copy['ApprovalFY'].apply(type).value_counts()
 
+
 # Create a function to apply formatting to the records of str type only
 def clean_str(x):
     if isinstance(x, str):
-        return(x.replace('A', ''))
-    return(x)
+        return x.replace('A', '')
+    return x
+
 
 SBA_data_copy['ApprovalFY'] = SBA_data_copy['ApprovalFY'].apply(clean_str).astype('int64')
 
-# Change the type of NewExist to an integer and all currency-related fields to float values
-SBA_data_copy = SBA_data_copy.astype({'NewExist':'int64', 'DisbursementGross':'float64', 'BalanceGross': 'float64',
-                      'ChgOffPrinGr':'float64', 'GrAppv': 'float64', 'SBA_Appv':'float64'})
+# Change the type of NewExist to an integer, Zip and UrbanRural to str (categorical)
+# and all currency-related fields to float values
+SBA_data_copy = SBA_data_copy.astype({'Zip': 'str', 'NewExist': 'int64', 'UrbanRural': 'str', 'DisbursementGross': 'float',
+                                      'BalanceGross': 'float', 'ChgOffPrinGr': 'float', 'GrAppv': 'float',
+                                      'SBA_Appv': 'float'})
 
 # Create a new column with the industry the NAICS code represents
 SBA_data_copy['Industry'] = SBA_data_copy['NAICS'].astype('str').apply(lambda x: x[:2])
 SBA_data_copy['Industry'] = SBA_data_copy['Industry'].map({
-                            '11':'Ag/For/Fish/Hunt',
-                            '21':'Min/Quar/Oil_Gas_ext',
+                            '11': 'Ag/For/Fish/Hunt',
+                            '21': 'Min/Quar/Oil_Gas_ext',
                             '22': 'Utilities',
                             '23': 'Construction',
                             '31': 'Manufacturing',
@@ -113,7 +117,9 @@ SBA_data_copy[['ApprovalDate', 'DisbursementDate']] = SBA_data_copy[['ApprovalDa
 SBA_data_copy['DaysToDisbursement'] = SBA_data_copy['DisbursementDate'] - SBA_data_copy['ApprovalDate']
 
 # Change DaysToDisbursement from a timedelta64 dtype to an int64 dtype
-
+# Converts series to str, removes all characters after the space before 'd' in days for each record, then changes
+# the dtype to int
+SBA_data_copy['DaysToDisbursement'] = SBA_data_copy['DaysToDisbursement'].astype('str').apply(lambda x: x[:x.index('d')-1]).astype('int64')
 
 # Create StateSame flag field which identifies where the business State is the same as the BankState
 SBA_data_copy['StateSame'] = np.where(SBA_data_copy['State'] == SBA_data_copy['BankState'], 1, 0)
@@ -122,18 +128,84 @@ SBA_data_copy['StateSame'] = np.where(SBA_data_copy['State'] == SBA_data_copy['B
 # rather than dollar amount in most situations
 SBA_data_copy['SBA_AppvPct'] = SBA_data_copy['SBA_Appv']/SBA_data_copy['GrAppv']
 
+# Create AppvDisbursed flag field signifying if the loan amount disbursed was equal to the full amount approved
+SBA_data_copy['AppvDisbursed'] = np.where(SBA_data_copy['DisbursementGross'] == SBA_data_copy['GrAppv'], 1, 0)
+
+# Change Target field (MIS_Status) so P I F = 1 and CHGOFF = 0 so we can see what contributes to a successful loan
+SBA_data_copy['MIS_Status'] = np.where(SBA_data_copy['MIS_Status'] == 'P I F', 1, 0)
+
+# Format dtypes where necessary after feature engineering
+SBA_data_copy = SBA_data_copy.astype({'RevLineCr': 'int64', 'LowDoc': 'int64', 'MIS_Status': 'int64',
+                                      'IsFranchise': 'int64', 'NewBusiness': 'int64', 'StateSame': 'int64'})
+
+SBA_data_copy['EarlyDisbursement'] = np.where(SBA_data_copy['DisbursementDate'] < SBA_data_copy['ApprovalDate'], 1, 0)
+
 # Remove unnecessary columns
-# LoanNr_ChkDgt provides no value to the analysis
+# LoanNr_ChkDgt and Name provide no value to the analysis
 # ChgOffDate only applies when a loan is charged off and isn't relevant to the analysis either
-# NAICS is no longer needed as we have created Industry to replace it
-# ApprovalDate and DisbursementDate dropped; hypothesis that DaysToDisbursement will be more valuable
+# NAICS replaced by Industry; NewExist replaced by NewBusiness flag; FranchiseCode replaced by IsFranchise flag
+# ApprovalDate and DisbursementDate dropped - hypothesis that DaysToDisbursement will be more valuable
 # SBA_Appv since guaranteed amount is based on a percentage of gross loan amount, not dollar amount
-SBA_data_copy.drop(columns=['Bank', 'NewExist', 'LoanNr_ChkDgt', 'NAICS', 'ApprovalDate', 'FranchiseCode', 'ChgOffDate',
-                            'DisbursementDate', 'SBA_Appv'], inplace=True)
+SBA_data_copy.drop(columns=['LoanNr_ChkDgt', 'Name', 'Bank', 'NAICS', 'ApprovalDate', 'NewExist', 'FranchiseCode',
+                            'ChgOffDate', 'DisbursementDate', 'BalanceGross', 'ChgOffPrinGr', 'SBA_Appv'], inplace=True)
+
+# Verify all null values are removed from data
+SBA_data_copy.isnull().sum()
 
 # Only look at records with an ApprovalFY of at least 2010 for a more relevant analysis
-# A few records had an NAICS of 0 and were mapped as NaN, so those records are removed as well
-SBA_data_copy = SBA_data_copy[(SBA_data_copy['ApprovalFY'] >= 2010) & (SBA_data_copy['Industry'].notnull())]
+SBA_data_copy = SBA_data_copy[SBA_data_copy['ApprovalFY'] >= 2010]
 
-# Check how many records are remaining
+# Check how many records and fields are remaining
 SBA_data_copy.shape
+
+# Get some information about the data
+SBA_data_copy.describe()
+
+# NOTES:
+# A vast majority of the records selected were approved during or before 2011
+# 75% of the businesses applying for loans in this sample had <= 10 employees, created <= 2 jobs and retained <= 9 jobs
+# The average loan term for the sample was about 7.5 years (90 months), with 75% of loans being 87 months or less
+# None of the loans in the sample were a part of the LowDoc loan program, so this field can be removed
+# Mean DisbursementGross is about $275,000 with std of $510,000 and 75% of loans being <= about $287,000
+# Mean GrAppv is about $250,000 with std of $482,000 and 75% of loans being <= $250,000
+# Mean MIS_Status is about 0.91, suggesting about 91% of the records were paid in full; will need to be accounted for
+# Vast majority of sampled loans are for small businesses that are not franchises
+# About 29% of sampled loans are new businesses
+# DaysToDisbursement was about 44 days on average, however the mean was -16 days and max was 1644 days so we'll need to
+# check for outliers
+# About 54% of loans were from a bank that was in the same state as the applying business
+# The average percentage of guaranteed loan amount was about 66%
+# About 68% of loans disbursed the full amount of the loan that was originally approved
+
+# Things to explore:
+# Average loan amount by industry
+#
+
+# Remove LowDoc field
+SBA_data_copy.drop(columns='LowDoc', inplace=True)
+
+# Create flag to signify if a larger amount was disbursed than what the Bank had approved
+# Likely RevLineCr?
+SBA_data_copy['DisburseGreaterAppv'] = np.where(SBA_data_copy['DisbursementGross'] > SBA_data_copy['GrAppv'], 1, 0)
+
+# Exploring with Visualizations
+# Create a groupby object on Industry for use in visualization
+industry_group = SBA_data_copy.groupby(['Industry'])
+
+# Data frames based on groupby on Industry looking at aggregate and average values
+df_industrySum = industry_group.sum().sort_values('DisbursementGross', ascending=False)
+df_industryAve = industry_group.mean().sort_values('DisbursementGross', ascending=False)
+
+# Add subplots to figure to build 1x2 grid and specify position of each subplot
+# ax1 = fig.add_subplot(1, 2, 1)
+# ax2 = fig.add_subplot(1, 2, 2)
+
+fig, ax = plt.subplots()
+ax.bar(df_industrySum.index, df_industrySum['DisbursementGross']/1000000000)
+ax.set_xticklabels(df_industrySum.index, rotation=60, horizontalalignment='right', fontsize=6)
+
+ax.set_title('Gross SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
+ax.set_xlabel('Industry')
+ax.set_ylabel('Gross Loan Disbursement (Billions)')
+
+plt.show()
