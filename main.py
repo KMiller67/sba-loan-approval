@@ -178,8 +178,11 @@ SBA_data_copy.describe()
 # About 68% of loans disbursed the full amount of the loan that was originally approved
 
 # Things to explore:
-# Average loan amount by industry
-#
+# Total/Average disbursed loan amount by industry
+# Average days to disbursement by industry
+# Number of PIF and CHGOFF loans by industry
+# Number of PIF and CHGOFF loans by State
+# Number of PIF and CHGOFF loans by ApprovalFY
 
 # Remove LowDoc field
 SBA_data_copy.drop(columns='LowDoc', inplace=True)
@@ -189,6 +192,7 @@ SBA_data_copy.drop(columns='LowDoc', inplace=True)
 SBA_data_copy['DisburseGreaterAppv'] = np.where(SBA_data_copy['DisbursementGross'] > SBA_data_copy['GrAppv'], 1, 0)
 
 # Exploring with Visualizations
+# Total/Average disbursed loan amount by industry
 # Create a groupby object on Industry for use in visualization
 industry_group = SBA_data_copy.groupby(['Industry'])
 
@@ -196,16 +200,50 @@ industry_group = SBA_data_copy.groupby(['Industry'])
 df_industrySum = industry_group.sum().sort_values('DisbursementGross', ascending=False)
 df_industryAve = industry_group.mean().sort_values('DisbursementGross', ascending=False)
 
+# Establish figure for placing bar charts side-by-side
+fig = plt.figure(figsize=(20, 5))
+
 # Add subplots to figure to build 1x2 grid and specify position of each subplot
-# ax1 = fig.add_subplot(1, 2, 1)
-# ax2 = fig.add_subplot(1, 2, 2)
+ax1 = fig.add_subplot(1, 2, 1)
+ax2 = fig.add_subplot(1, 2, 2)
 
-fig, ax = plt.subplots()
-ax.bar(df_industrySum.index, df_industrySum['DisbursementGross']/1000000000)
-ax.set_xticklabels(df_industrySum.index, rotation=60, horizontalalignment='right', fontsize=6)
+# Bar chart 1 = Gross SBA Loan Disbursement by Industry
+ax1.bar(df_industrySum.index, df_industrySum['DisbursementGross']/1000000000)
+ax1.set_xticklabels(df_industrySum.index, rotation=60, horizontalalignment='right', fontsize=6)
 
-ax.set_title('Gross SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
-ax.set_xlabel('Industry')
-ax.set_ylabel('Gross Loan Disbursement (Billions)')
+ax1.set_title('Gross SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
+ax1.set_xlabel('Industry')
+ax1.set_ylabel('Gross Loan Disbursement (Billions)')
+
+# Bar chart 2 = Average SBA Loan Disbursement by Industry
+ax2.bar(df_industryAve.index, df_industryAve['DisbursementGross'])
+ax2.set_xticklabels(df_industryAve.index, rotation=60, horizontalalignment='right', fontsize=6)
+
+ax2.set_title('Average SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
+ax2.set_xlabel('Industry')
+ax2.set_ylabel('Average Loan Disbursement')
 
 plt.show()
+
+# Average days to disbursement by industry
+fig2, ax = plt.subplots()
+
+ax.bar(df_industryAve.index, df_industryAve['DaysToDisbursement'].sort_values(ascending=False))
+ax.set_xticklabels(df_industryAve.index, rotation=60, horizontalalignment='right', fontsize=6)
+ax.set_title('Average Days to SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
+ax.set_xlabel('Industry')
+ax.set_ylabel('Average Days to Disbursement')
+
+plt.show()
+
+
+# PIF and CHGOFF
+fig3 = plt.figure((20, 10))
+
+ax1a = fig3.add_subplot(2, 2, 1)
+ax2a = fig3.add_subplot(2, 2, 2)
+ax3a = fig3.add_subplot(2, 2, 3)
+
+# Number of PIF and CHGOFF loans by industry
+# Number of PIF and CHGOFF loans by State
+# Number of PIF and CHGOFF loans by ApprovalFY
