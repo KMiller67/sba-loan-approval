@@ -181,8 +181,8 @@ SBA_data_copy.describe()
 # Total/Average disbursed loan amount by industry
 # Average days to disbursement by industry
 # Number of PIF and CHGOFF loans by industry
-# Number of PIF and CHGOFF loans by State
 # Number of PIF and CHGOFF loans by ApprovalFY
+# Number of PIF and CHGOFF loans by State
 
 # Remove LowDoc field
 SBA_data_copy.drop(columns='LowDoc', inplace=True)
@@ -209,7 +209,7 @@ ax2 = fig.add_subplot(1, 2, 2)
 
 # Bar chart 1 = Gross SBA Loan Disbursement by Industry
 ax1.bar(df_industrySum.index, df_industrySum['DisbursementGross']/1000000000)
-ax1.set_xticklabels(df_industrySum.index, rotation=60, horizontalalignment='right', fontsize=6)
+ax1.set_xticklabels(df_industrySum.index, rotation=30, horizontalalignment='right', fontsize=6)
 
 ax1.set_title('Gross SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
 ax1.set_xlabel('Industry')
@@ -217,7 +217,7 @@ ax1.set_ylabel('Gross Loan Disbursement (Billions)')
 
 # Bar chart 2 = Average SBA Loan Disbursement by Industry
 ax2.bar(df_industryAve.index, df_industryAve['DisbursementGross'])
-ax2.set_xticklabels(df_industryAve.index, rotation=60, horizontalalignment='right', fontsize=6)
+ax2.set_xticklabels(df_industryAve.index, rotation=30, horizontalalignment='right', fontsize=6)
 
 ax2.set_title('Average SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
 ax2.set_xlabel('Industry')
@@ -229,21 +229,65 @@ plt.show()
 fig2, ax = plt.subplots()
 
 ax.bar(df_industryAve.index, df_industryAve['DaysToDisbursement'].sort_values(ascending=False))
-ax.set_xticklabels(df_industryAve.index, rotation=60, horizontalalignment='right', fontsize=6)
+ax.set_xticklabels(df_industryAve['DaysToDisbursement'].sort_values(ascending=False).index, rotation=35, horizontalalignment='right', fontsize=6)
+
 ax.set_title('Average Days to SBA Loan Disbursement by Industry from 2010-2014', fontsize=15)
 ax.set_xlabel('Industry')
 ax.set_ylabel('Average Days to Disbursement')
 
 plt.show()
 
-
 # PIF and CHGOFF
-fig3 = plt.figure((20, 10))
+fig3 = plt.figure(figsize=(15, 10))
 
-ax1a = fig3.add_subplot(2, 2, 1)
-ax2a = fig3.add_subplot(2, 2, 2)
-ax3a = fig3.add_subplot(2, 2, 3)
+ax1a = plt.subplot(2, 2, 1)
+ax2a = plt.subplot(2, 2, 2)
+ax3a = plt.subplot(2, 1, 2)
+
+# Function for creating stacked bar charts grouped by desired column
+# df = original dataframe, col = x-axis grouping, stack_col = column to show stacked values
+# Essentially acts as a stacked histogram when stack_col is a flag variable
+def stacked_setup(df, col, axes, stack_col='MIS_Status'):
+    data = df.groupby([col, stack_col])[col].count().unstack(stack_col)
+
+    axes.bar(data.index, data[0], label='CHGOFF')
+    axes.bar(data.index, data[1], bottom=data[0], label='P I F')
+
 
 # Number of PIF and CHGOFF loans by industry
-# Number of PIF and CHGOFF loans by State
+stacked_setup(df=SBA_data_copy, col='Industry', axes=ax1a)
+ax1a.set_xticklabels(SBA_data_copy.groupby(['Industry', 'MIS_Status'])['Industry'].count().unstack('MIS_Status').index,
+                     rotation=35, horizontalalignment='right', fontsize=6)
+
+ax1a.set_title('Number of PIF/CHGOFF Loans by Industry')
+ax1a.set_xlabel('Industry')
+ax1a.set_ylabel('Number of PIF/CHGOFF Loans')
+ax1a.legend()
+
 # Number of PIF and CHGOFF loans by ApprovalFY
+stacked_setup(df=SBA_data_copy, col='ApprovalFY', axes=ax2a)
+
+ax2a.set_title('Number of PIF/CHGOFF Loans by Approval Year')
+ax2a.set_xlabel('Approval Year')
+ax2a.set_ylabel('Number of PIF/CHGOFF Loans')
+ax2a.legend()
+
+# Number of PIF and CHGOFF loans by State
+stacked_setup(df=SBA_data_copy, col='State', axes=ax3a)
+# ax3a.set_xticklabels(SBA_data_copy.groupby(['State', 'MIS_Status'])['State'].count().unstack('MIS_Status').index,
+#                      fontsize=9)
+
+ax3a.set_title('Number of PIF/CHGOFF Loans by State')
+ax3a.set_xlabel('State')
+ax3a.set_ylabel('Number of PIF/CHGOFF Loans')
+ax3a.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Findings from bar graphs:
+# Manufacturing industry had the most loan funds disbursed at about $1.5 billion
+# The Management industry had among the lowest total loan funds disbursed (about $6.9 million from 2010-2014), but had
+# the largest average loan disbursed at $535,000, suggesting the industry saw very few but large loans (or an outlier)
+# Similar situation with the Mining, quarrying and oil & gas extraction industry ($72.7M total, $433,000 average)
+# Most industries saw an average days to disbursement of >= 40 days
