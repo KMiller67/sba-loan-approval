@@ -3,6 +3,8 @@ Investigating whether an SBA loan should be approved or not based on historical 
 
 This repository will be used to store my work and track my progress through a personal data science project to apply what I've learned through various resources, including proper use of Github and modeling techniques.
 
+A more complete and detailed version of this analysis in Jupyter Notebook format can be found via my Kaggle post here: https://www.kaggle.com/kevinm6720/sba-loan-approval-analysis
+
 ## Why SBA Loan Approval?
 My first job out of college was at a community bank as a Credit Analyst, where I spent my time underwriting loans for small businesses. I loved being able to dig into the financial statements for each business and see how businesses in different industries operate. This role taught me the importance of small businesses and the role they play in our communities. It also taught me about some of the struggles entreprenuers face when starting a business, including the initial capital necessary to get started.
 
