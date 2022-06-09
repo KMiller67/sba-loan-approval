@@ -1,4 +1,4 @@
-# SBA_LoanApproval
+# SBA Loan Approval
 Investigating whether an SBA loan should be approved or not based on historical SBA loan data from 1987 to 2014.
 
 This repository will be used to store my work and track my progress through a personal data science project to apply what I've learned through various resources, including proper use of Github and modeling techniques.
